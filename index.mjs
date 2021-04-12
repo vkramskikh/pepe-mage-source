@@ -81,7 +81,7 @@ async function postRandomMessage() {
 }
 
 function pickMessageProps(message) {
-  return pick(message, ['caption', 'parse_mode', 'caption_entities']);
+  return message.forward_date ? {} : pick(message, ['caption', 'parse_mode', 'caption_entities']);
 }
 
 function serializeMessage(message) {
