@@ -23,9 +23,11 @@ const {
   debug: DEBUG,
   minHour: MIN_HOUR = 6,
   maxHour: MAX_HOUR = 22,
-  postInterval: POST_INTERVAL = 10 * 60 * 1000,
+  minPostCount: MIN_POST_COUNT = 3,
+  maxPostCount: MAX_POST_COUNT = 6,
+  postInterval: POST_INTERVAL = 20 * 60 * 1000,
   postIntervalOffset: POST_INTERVAL_OFFSET = POST_INTERVAL / 10,
-  postChance: POST_CHANCE = 0.2,
+  postChance: POST_CHANCE = 0.1,
 } = config;
 
 const db = Datastore.create(path.join(cwd, 'store.db'));
@@ -58,7 +60,7 @@ async function handlePostTimer() {
     const now = new Date();
     const hour = now.getHours() + now.getTimezoneOffset() / 60;
     if (hour > MIN_HOUR && hour < MAX_HOUR && Math.random() < POST_CHANCE) {
-      await postRandomMessage();
+      await postRandomMessages(Math.round(MIN_POST_COUNT + Math.random() * (MAX_POST_COUNT - MIN_POST_COUNT)));
     }
   } finally {
     schedulePostTimer();
