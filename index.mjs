@@ -80,6 +80,12 @@ async function postRandomMessage() {
   }
 }
 
+async function postRandomMessages(count) {
+  for (let i = 0; i < count; i++) {
+    await postRandomMessage();
+  }
+}
+
 function pickMessageProps(message) {
   return message.forward_date ? {} : pick(message, ['caption', 'parse_mode', 'caption_entities']);
 }
@@ -130,6 +136,7 @@ function storeSerializedMessage(serializedMessage) {
 async function handleCommand(message) {
   const isAdmin = checkAdminRights(message);
   const command = message.text;
+  let match = null;
   if (command === '/start') {
     if (!isAdmin) {
       return bot.sendMessage(message.chat.id, 'Hi! Send me some memes :)');
@@ -146,9 +153,11 @@ async function handleCommand(message) {
       const count = await db.count({type: 'message'});
       return bot.sendMessage(message.chat.id, `Message queue size: ${count}`);
     }
-  } else if (command === '/random_post') {
+  } else if (match = command.match(/^\/random_post(?:\s+(\d+))?$/)) {
     if (isAdmin) {
-      return postRandomMessage();
+      let count = 1;
+      if (isString(match[1])) count = Number(match[1]);
+      return postRandomMessages(count);
     }
   }
 
