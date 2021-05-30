@@ -22,12 +22,13 @@ const {
   chatId: CHAT_ID,
   debug: DEBUG,
   minHour: MIN_HOUR = 6,
-  maxHour: MAX_HOUR = 22,
+  maxHour: MAX_HOUR = 21,
   minPostCount: MIN_POST_COUNT = 3,
-  maxPostCount: MAX_POST_COUNT = 6,
+  maxPostCount: MAX_POST_COUNT = 5,
   postInterval: POST_INTERVAL = 20 * 60 * 1000,
   postIntervalOffset: POST_INTERVAL_OFFSET = POST_INTERVAL / 10,
-  postChance: POST_CHANCE = 0.1,
+  basePostChance: BASE_POST_CHANCE = 0.15,
+  basePostChancePostCount: BASE_POST_CHANCE_POST_COUNT = 25,
 } = config;
 
 const db = Datastore.create(path.join(cwd, 'store.db'));
@@ -57,9 +58,11 @@ bot.on('callback_query', handleCallbackQuery);
 
 async function handlePostTimer() {
   try {
+    const count = await db.count({type: 'message'});
+    const postChance = Math.min(BASE_POST_CHANCE * (count / BASE_POST_CHANCE_POST_COUNT), 1);
     const now = new Date();
     const hour = now.getHours() + now.getTimezoneOffset() / 60;
-    if (hour > MIN_HOUR && hour < MAX_HOUR && Math.random() < POST_CHANCE) {
+    if (hour > MIN_HOUR && hour < MAX_HOUR && Math.random() < postChance) {
       await postRandomMessages(Math.round(MIN_POST_COUNT + Math.random() * (MAX_POST_COUNT - MIN_POST_COUNT)));
     }
   } finally {
