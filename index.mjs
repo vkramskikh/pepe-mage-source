@@ -25,9 +25,9 @@ const {
   maxHour: MAX_HOUR = 21,
   minPostCount: MIN_POST_COUNT = 3,
   maxPostCount: MAX_POST_COUNT = 5,
-  postInterval: POST_INTERVAL = 20 * 60 * 1000,
+  postInterval: POST_INTERVAL = 30 * 60 * 1000,
   postIntervalOffset: POST_INTERVAL_OFFSET = POST_INTERVAL / 10,
-  basePostChance: BASE_POST_CHANCE = 0.15,
+  basePostChance: BASE_POST_CHANCE = 0.2,
   basePostChancePostCount: BASE_POST_CHANCE_POST_COUNT = 25,
 } = config;
 
