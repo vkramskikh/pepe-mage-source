@@ -14,7 +14,7 @@
     "es6-error": "4.1.1",
     "lodash-es": "4.17.21",
     "nedb-promises": "4.1.1",
-    "node-telegram-bot-api": "0.51.0",
+    "node-telegram-bot-api": "0.53.0",
     "supports-color": "8.1.1"
   }
 }
