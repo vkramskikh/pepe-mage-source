@@ -56,6 +56,8 @@ bot.on('message', async (message) => {
 
 bot.on('callback_query', handleCallbackQuery);
 
+let postTimer = null;
+
 async function handlePostTimer() {
   try {
     const count = await db.count({type: 'message'});
@@ -71,7 +73,8 @@ async function handlePostTimer() {
 }
 
 function schedulePostTimer() {
-  setTimeout(handlePostTimer, POST_INTERVAL + POST_INTERVAL_OFFSET * Math.random());
+  if (postTimer) clearTimeout(postTimer);
+  postTimer = setTimeout(handlePostTimer, POST_INTERVAL + POST_INTERVAL_OFFSET * Math.random());
 }
 
 schedulePostTimer();
@@ -162,6 +165,7 @@ async function handleCommand(message) {
     if (isAdmin) {
       let count = 1;
       if (isString(match[1])) count = Number(match[1]);
+      schedulePostTimer();
       return postRandomMessages(count);
     }
   }
