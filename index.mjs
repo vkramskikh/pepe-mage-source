@@ -29,6 +29,7 @@ const {
   postIntervalOffset: POST_INTERVAL_OFFSET = POST_INTERVAL / 10,
   basePostChance: BASE_POST_CHANCE = 0.25,
   basePostChancePostCount: BASE_POST_CHANCE_POST_COUNT = 25,
+  blacklistedChatIds: BLACKLISTED_CHAT_IDS = [],
 } = config;
 
 const db = Datastore.create(path.join(cwd, 'store.db'));
@@ -137,6 +138,10 @@ function checkAdminRights(message) {
   return administratorsIds.includes(message.from.id);
 }
 
+function checkIfBlacklisted(message) {
+  return !!message.forward_from_chat && BLACKLISTED_CHAT_IDS.includes(message.forward_from_chat.id);
+}
+
 function storeSerializedMessage(serializedMessage) {
   return db.insert({type: 'message', message: serializedMessage});
 }
@@ -186,6 +191,7 @@ async function handleMedia(message) {
       await storeSerializedMessage(serializedMessage);
       await bot.deleteMessage(message.chat.id, message.message_id);
     } else {
+      if (checkIfBlacklisted(message)) return bot.sendMessage(message.chat.id, 'This content is not welcome here :(');
       await sendSerializedMessage(ownerId, addAdminReplyMarkup(serializedMessage));
       await bot.sendMessage(message.chat.id, 'Thanks for your contribution!');
     }
