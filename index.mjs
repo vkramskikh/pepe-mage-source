@@ -4,7 +4,7 @@ import debug from 'debug';
 import TelegramBot from 'node-telegram-bot-api';
 import Datastore from 'nedb-promises';
 import ExtendableError from 'es6-error';
-import {map, find, pick, isString, isPlainObject, compact} from 'lodash-es';
+import {map, find, pick, isString, isPlainObject, compact, startsWith} from 'lodash-es';
 
 const log = debug('pepe-mage-source');
 const logError = debug('pepe-mage-source:error');
@@ -116,15 +116,10 @@ function serializeMessage(message) {
   }
 }
 
-function addAdminReplyMarkup(serializedMessage) {
+function addKeyboard(serializedMessage, keyboard) {
   if (serializedMessage.length === 3 && isPlainObject(serializedMessage[2])) {
     const [method, fileId, options] = serializedMessage;
-    return [method, fileId, {...options, reply_markup: {
-      inline_keyboard: [[
-        {text: 'Yes', callback_data: 'accept'},
-        {text: 'No', callback_data: 'reject'},
-      ]]
-    }}];
+    return [method, fileId, {...options, reply_markup: {inline_keyboard: keyboard}}];
   } else {
     return serializedMessage;
   }
@@ -158,6 +153,7 @@ async function handleCommand(message) {
       return bot.sendMessage(message.chat.id, 'Hi!', {reply_markup: {
         keyboard: [[
           {text: '/queue_info'},
+          {text: '/show_queue'},
           {text: '/random_post'},
         ]]
       }});
@@ -165,6 +161,17 @@ async function handleCommand(message) {
   } else if (command === '/queue_info') {
     if (isAdmin) {
       const count = await db.count({type: 'message'});
+      return bot.sendMessage(message.chat.id, `Message queue size: ${count}`);
+    }
+  } else if (command === '/show_queue') {
+    if (isAdmin) {
+      const docs = await db.find({type: 'message'});
+      for (const doc of docs) {
+        await sendSerializedMessage(
+          ownerId,
+          addKeyboard(doc.message, [[{text: 'Remove', callback_data: 'remove ' + doc._id}]])
+        );
+      }
       return bot.sendMessage(message.chat.id, `Message queue size: ${count}`);
     }
   } else if (match = command.match(/^\/random_post(?:\s+(\d+))?$/)) {
@@ -193,7 +200,10 @@ async function handleMedia(message) {
       await bot.deleteMessage(message.chat.id, message.message_id);
     } else {
       if (checkIfBlacklisted(message)) return bot.sendMessage(message.chat.id, 'This content is not welcome here :(');
-      await sendSerializedMessage(ownerId, addAdminReplyMarkup(serializedMessage));
+      await sendSerializedMessage(ownerId, addKeyboard(serializedMessage, [[
+        {text: 'Yes', callback_data: 'accept'},
+        {text: 'No', callback_data: 'reject'},
+      ]]));
       await bot.sendMessage(message.chat.id, 'Thanks for your contribution!');
       logInfo(
         'New media from ' +
@@ -215,6 +225,9 @@ async function handleCallbackQuery(callbackQuery) {
         if (error instanceof SerializationError) return bot.sendMessage(callbackQuery.message.chat.id, error.message);
       }
       await storeSerializedMessage(serializedMessage);
+    } else if (startsWith(callbackQuery.data, 'remove ')) {
+      const [, docId] = callbackQuery.data.split(' ');
+      await db.remove({_id: docId});
     }
     await bot.deleteMessage(callbackQuery.message.chat.id, callbackQuery.message.message_id);
   }
