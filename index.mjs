@@ -4,7 +4,7 @@ import debug from 'debug';
 import TelegramBot from 'node-telegram-bot-api';
 import Datastore from 'nedb-promises';
 import ExtendableError from 'es6-error';
-import {map, find, pick, isString, isPlainObject, compact, startsWith} from 'lodash-es';
+import {map, find, pick, isString, isPlainObject, compact} from 'lodash-es';
 
 const log = debug('pepe-mage-source');
 const logError = debug('pepe-mage-source:error');
@@ -167,10 +167,10 @@ async function handleCommand(message) {
     if (isAdmin) {
       const docs = await db.find({type: 'message'});
       for (const doc of docs) {
-        await sendSerializedMessage(
-          ownerId,
-          addKeyboard(doc.message, [[{text: 'Remove', callback_data: 'remove ' + doc._id}]])
-        );
+        await sendSerializedMessage(ownerId, addKeyboard(doc.message, [[
+          {text: 'Post', callback_data: 'post ' + doc._id},
+          {text: 'Remove', callback_data: 'remove ' + doc._id},
+        ]]));
       }
       return bot.sendMessage(message.chat.id, `Message queue size: ${count}`);
     }
@@ -216,7 +216,8 @@ async function handleMedia(message) {
 
 async function handleCallbackQuery(callbackQuery) {
   const isAdmin = checkAdminRights(callbackQuery);
-  if (isAdmin) {
+  if (isAdmin && callbackQuery.data) {
+    let match = null;
     if (callbackQuery.data === 'accept') {
       let serializedMessage = null;
       try {
@@ -225,9 +226,14 @@ async function handleCallbackQuery(callbackQuery) {
         if (error instanceof SerializationError) return bot.sendMessage(callbackQuery.message.chat.id, error.message);
       }
       await storeSerializedMessage(serializedMessage);
-    } else if (startsWith(callbackQuery.data, 'remove ')) {
-      const [, docId] = callbackQuery.data.split(' ');
-      await db.remove({_id: docId});
+    } else if (match = callbackQuery.data.match(/^post (.*)$/)) {
+      const doc = await db.findOne({type: 'message', _id: match[1]});
+      if (doc) {
+        await sendSerializedMessage(DEBUG ? ownerId : CHAT_ID, doc.message);
+        await db.remove({_id: match[1]});
+      }
+    } else if (match = callbackQuery.data.match(/^remove (.*)$/)) {
+      await db.remove({_id: match[1]});
     }
     await bot.deleteMessage(callbackQuery.message.chat.id, callbackQuery.message.message_id);
   }
