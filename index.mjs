@@ -4,10 +4,11 @@ import debug from 'debug';
 import TelegramBot from 'node-telegram-bot-api';
 import Datastore from 'nedb-promises';
 import ExtendableError from 'es6-error';
-import {map, find, pick, isString, isPlainObject} from 'lodash-es';
+import {map, find, pick, isString, isPlainObject, compact} from 'lodash-es';
 
 const log = debug('pepe-mage-source');
 const logError = debug('pepe-mage-source:error');
+const logInfo = debug('pepe-mage-source:info');
 
 class SerializationError extends ExtendableError {};
 
@@ -194,6 +195,11 @@ async function handleMedia(message) {
       if (checkIfBlacklisted(message)) return bot.sendMessage(message.chat.id, 'This content is not welcome here :(');
       await sendSerializedMessage(ownerId, addAdminReplyMarkup(serializedMessage));
       await bot.sendMessage(message.chat.id, 'Thanks for your contribution!');
+      logInfo(
+        'New media from ' +
+        (message.from.username ? '@' + message.from.username + ' ': '') +
+        compact([message.from.first_name, message.from.last_name]).join(' ')
+      );
     }
   }
 }
