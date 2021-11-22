@@ -172,7 +172,6 @@ async function handleCommand(message) {
           {text: 'Remove', callback_data: 'remove ' + doc._id},
         ]]));
       }
-      return bot.sendMessage(message.chat.id, `Message queue size: ${count}`);
     }
   } else if (match = command.match(/^\/random_post(?:\s+(\d+))?$/)) {
     if (isAdmin) {
