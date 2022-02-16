@@ -63,6 +63,7 @@ let postTimer = null;
 async function handlePostTimer() {
   try {
     const count = await db.count({type: 'message'});
+    if (count < MIN_POST_COUNT) return;
     const postChance = Math.min(BASE_POST_CHANCE * (count / BASE_POST_CHANCE_POST_COUNT), 1);
     const now = new Date();
     const hour = now.getHours() + now.getTimezoneOffset() / 60;
